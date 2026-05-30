@@ -62,7 +62,9 @@ def animate_stock(stock, g, name, path):
     spread_bps = d["spread_bps"].to_numpy(float)
     stamps = d[c["datetime"]].dt.strftime("%Y-%m-%d  %H:%M").to_numpy()
 
-    vmax = max(bsize.max(), asize.max(), 1.0) * 1.20
+    spread_p = ask - bid
+    half_range = max(spread_p.max(), 0.02) * 0.75   # fixed x half-range (pence from mid)
+    vmax = max(bsize.max(), asize.max(), 1.0) * 1.50
 
     fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor(BG)
@@ -70,28 +72,44 @@ def animate_stock(stock, g, name, path):
     def update(k):
         ax.clear()
         ax.set_facecolor(BG)
-        # Fixed positions: the Best Bid bar sits at x=0 and the Best Ask bar at
-        # x=1, so their labels never move. Only the heights (sizes) and the
-        # displayed prices, mid, spread and date/time change each frame.
-        ax.bar(0, bsize[k], width=0.6, color=BID_COLOUR,
-               edgecolor="darkorange", linewidth=0.8)
-        ax.bar(1, asize[k], width=0.6, color=ASK_COLOUR,
-               edgecolor="steelblue", linewidth=0.8)
-        ax.text(0, bsize[k], f"{bsize[k]:,.0f} sh", ha="center", va="bottom", fontsize=11)
-        ax.text(1, asize[k], f"{asize[k]:,.0f} sh", ha="center", va="bottom", fontsize=11)
-        ax.set_xlim(-0.7, 1.7)
+        s = max(spread_p[k], 1e-9)
+        xb, xa = -s / 2.0, s / 2.0
+        bw = max(half_range * 0.14, s * 0.30)
+        # Bid and ask placed by their distance from the mid (x=0), so the gap
+        # between them is the spread. Only the bars move; the side labels do not.
+        ax.bar(xb, bsize[k], width=bw, color=BID_COLOUR, edgecolor="darkorange", linewidth=0.8)
+        ax.bar(xa, asize[k], width=bw, color=ASK_COLOUR, edgecolor="steelblue", linewidth=0.8)
+        ax.text(xb, bsize[k], f"{bid[k]:.2f}p\n{bsize[k]:,.0f} sh",
+                ha="center", va="bottom", fontsize=10)
+        ax.text(xa, asize[k], f"{ask[k]:.2f}p\n{asize[k]:,.0f} sh",
+                ha="center", va="bottom", fontsize=10)
+        # Mid line, fixed at the centre.
+        ax.axvline(0, color=MID_COLOUR, linestyle="--", linewidth=1.4)
+        ax.text(0, vmax * 0.02, "Mid", color="#1e8c50", ha="center", va="bottom",
+                fontsize=10, fontweight="bold")
+        # Spread as a horizontal double-headed arrow between best bid and best ask.
+        y_arrow = vmax * 0.80
+        ax.annotate("", xy=(xa, y_arrow), xytext=(xb, y_arrow),
+                    arrowprops=dict(arrowstyle="<->", color="#333333", lw=1.8))
+        ax.text(0, y_arrow + vmax * 0.02,
+                f"Spread  {spread_bps[k]:.2f} bps  ({s:.2f}p)",
+                ha="center", va="bottom", fontsize=11, fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="grey"))
+        # Fixed side labels (never move).
+        ax.text(-half_range, vmax * 0.99, "Best Bid", color="darkorange",
+                fontsize=12, fontweight="bold", ha="left", va="top")
+        ax.text(half_range, vmax * 0.99, "Best Ask", color="steelblue",
+                fontsize=12, fontweight="bold", ha="right", va="top")
+        ax.set_xlim(-half_range, half_range)
         ax.set_ylim(0, vmax)
-        ax.set_xticks([0, 1])
-        ax.set_xticklabels([f"Best Bid\n{bid[k]:.2f}p", f"Best Ask\n{ask[k]:.2f}p"],
-                           fontsize=12, fontweight="bold")
-        ax.set_ylabel("Shares available at best price", fontsize=13, fontweight="bold")
+        ax.set_xlabel("Distance from mid (pence)", fontsize=12, fontweight="bold")
+        ax.set_ylabel("Shares available at best price", fontsize=12, fontweight="bold")
         ax.set_title(f"{name} ({stock}) — real top-of-book", fontsize=14, fontweight="bold")
-        ax.tick_params(axis="y", labelsize=11)
-        ax.text(0.5, 0.97,
-                f"{stamps[k]}\nMid {mid[k]:.2f}p     Spread {spread_bps[k]:.2f} bps",
-                transform=ax.transAxes, ha="center", va="top", fontsize=12,
-                family="monospace",
-                bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="grey"))
+        ax.tick_params(labelsize=10)
+        # Date and time banner (fixed position, updates each frame).
+        ax.text(0.5, 0.94, stamps[k], transform=ax.transAxes, ha="center", va="top",
+                fontsize=12, fontweight="bold", family="monospace",
+                bbox=dict(boxstyle="round,pad=0.3", fc="#fffbe6", ec="grey"))
 
     anim = animation.FuncAnimation(fig, update, frames=len(d),
                                    interval=1000 // FPS, blit=False)
