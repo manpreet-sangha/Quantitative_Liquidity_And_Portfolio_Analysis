@@ -63,7 +63,7 @@ def animate_stock(stock, g, name, path):
     stamps = d[c["datetime"]].dt.strftime("%Y-%m-%d  %H:%M").to_numpy()
 
     spread_p = ask - bid
-    half_range = max(spread_p.max(), 0.02) * 0.75   # fixed x half-range (pence from mid)
+    half_win = max(spread_p.max(), 0.02) * 1.5   # price window each side of the mid (pence)
     vmax = max(bsize.max(), asize.max(), 1.0) * 1.50
 
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -72,37 +72,34 @@ def animate_stock(stock, g, name, path):
     def update(k):
         ax.clear()
         ax.set_facecolor(BG)
-        s = max(spread_p[k], 1e-9)
-        xb, xa = -s / 2.0, s / 2.0
-        bw = max(half_range * 0.14, s * 0.30)
-        # Bid and ask placed by their distance from the mid (x=0), so the gap
-        # between them is the spread. Only the bars move; the side labels do not.
-        ax.bar(xb, bsize[k], width=bw, color=BID_COLOUR, edgecolor="darkorange", linewidth=0.8)
-        ax.bar(xa, asize[k], width=bw, color=ASK_COLOUR, edgecolor="steelblue", linewidth=0.8)
-        ax.text(xb, bsize[k], f"{bid[k]:.2f}p\n{bsize[k]:,.0f} sh",
-                ha="center", va="bottom", fontsize=10)
-        ax.text(xa, asize[k], f"{ask[k]:.2f}p\n{asize[k]:,.0f} sh",
-                ha="center", va="bottom", fontsize=10)
-        # Mid line, fixed at the centre.
-        ax.axvline(0, color=MID_COLOUR, linestyle="--", linewidth=1.4)
-        ax.text(0, vmax * 0.02, "Mid", color="#1e8c50", ha="center", va="bottom",
-                fontsize=10, fontweight="bold")
+        b, a, m = bid[k], ask[k], mid[k]
+        s = max(a - b, 1e-9)
+        bw = max(half_win * 0.07, s * 0.30)
+        # Bid and ask at their real prices; the view is centred on the real mid.
+        ax.bar(b, bsize[k], width=bw, color=BID_COLOUR, edgecolor="darkorange", linewidth=0.8)
+        ax.bar(a, asize[k], width=bw, color=ASK_COLOUR, edgecolor="steelblue", linewidth=0.8)
+        ax.text(b, bsize[k], f"{b:.2f}p\n{bsize[k]:,.0f} sh", ha="center", va="bottom", fontsize=10)
+        ax.text(a, asize[k], f"{a:.2f}p\n{asize[k]:,.0f} sh", ha="center", va="bottom", fontsize=10)
+        # Mid line at the real mid price, labelled with its value.
+        ax.axvline(m, color=MID_COLOUR, linestyle="--", linewidth=1.4)
+        ax.text(m, vmax * 0.02, f"Mid {m:.2f}p", color="#1e8c50", ha="center",
+                va="bottom", fontsize=10, fontweight="bold")
         # Spread as a horizontal double-headed arrow between best bid and best ask.
         y_arrow = vmax * 0.80
-        ax.annotate("", xy=(xa, y_arrow), xytext=(xb, y_arrow),
+        ax.annotate("", xy=(a, y_arrow), xytext=(b, y_arrow),
                     arrowprops=dict(arrowstyle="<->", color="#333333", lw=1.8))
-        ax.text(0, y_arrow + vmax * 0.02,
+        ax.text(m, y_arrow + vmax * 0.02,
                 f"Spread  {spread_bps[k]:.2f} bps  ({s:.2f}p)",
                 ha="center", va="bottom", fontsize=11, fontweight="bold",
                 bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="grey"))
-        # Fixed side labels (never move).
-        ax.text(-half_range, vmax * 0.99, "Best Bid", color="darkorange",
-                fontsize=12, fontweight="bold", ha="left", va="top")
-        ax.text(half_range, vmax * 0.99, "Best Ask", color="steelblue",
-                fontsize=12, fontweight="bold", ha="right", va="top")
-        ax.set_xlim(-half_range, half_range)
+        # Fixed side labels (transAxes, so they never move).
+        ax.text(0.01, 0.99, "Best Bid", color="darkorange", fontsize=12,
+                fontweight="bold", ha="left", va="top", transform=ax.transAxes)
+        ax.text(0.99, 0.99, "Best Ask", color="steelblue", fontsize=12,
+                fontweight="bold", ha="right", va="top", transform=ax.transAxes)
+        ax.set_xlim(m - half_win, m + half_win)
         ax.set_ylim(0, vmax)
-        ax.set_xlabel("Distance from mid (pence)", fontsize=12, fontweight="bold")
+        ax.set_xlabel("Price (pence)", fontsize=12, fontweight="bold")
         ax.set_ylabel("Shares available at best price", fontsize=12, fontweight="bold")
         ax.set_title(f"{name} ({stock}) — real top-of-book", fontsize=14, fontweight="bold")
         ax.tick_params(labelsize=10)
