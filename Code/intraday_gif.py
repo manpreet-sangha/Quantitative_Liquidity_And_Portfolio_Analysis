@@ -81,7 +81,9 @@ def main():
              "Intraday spread by time of day", OUT / "intraday_spread.gif")
     _animate(agg, "depth_gbp", "Mean depth (GBP)",
              "Intraday depth by time of day", OUT / "intraday_depth.gif")
-    print(f"Saved intraday spread & depth GIFs for "
+    _animate(agg, "volume", "Mean volume (shares/min)",
+             "Intraday volume by time of day", OUT / "intraday_volume.gif")
+    print(f"Saved intraday spread, depth & volume GIFs for "
           f"{', '.join(config.PART1_STOCKS)} to {OUT}")
 
 

@@ -14,6 +14,8 @@ config.PART1_STOCKS, so it adapts automatically if the three stocks are re-chose
 
 import sys
 from pathlib import Path
+import contextlib
+import io
 
 import matplotlib
 matplotlib.use("Agg")   # headless: we save files, never open a window
@@ -114,7 +116,10 @@ def run_stock(stock, g, name, seconds=8.0, fps=12, warmup=400):
     # Animated GIF: fresh calibrated run.
     vis, nxt, cfg = _build(stock, g, name)
     gif = OUT / f"lob_sim_{base}.gif"
-    vis.save_gif(nxt, filepath=str(gif), duration_s=seconds, fps=fps)
+    # Swallow the visualiser's own prints (they contain non-ASCII characters that
+    # crash on Windows' default cp1252 stdout, e.g. under `streamlit run`).
+    with contextlib.redirect_stdout(io.StringIO()):
+        vis.save_gif(nxt, filepath=str(gif), duration_s=seconds, fps=fps)
     return cfg, png, gif
 
 

@@ -1,6 +1,7 @@
 # Track only the Code/ and input/ folders for this repository.
 /*
 !/.gitignore
+!/requirements.txt
 !/Code/
 !/input/
 
