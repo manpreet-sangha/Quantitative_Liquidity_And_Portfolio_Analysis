@@ -1,0 +1,12 @@
+{
+  "n_initial": 102082,
+  "n_after_session": 93928,
+  "n_after_spread": 93846,
+  "n_after_outliers": 93840,
+  "outlier_rule": "spread_bps > Q3 + 5.0 * IQR (per stock)",
+  "outliers_removed_per_stock": {
+    "EXPN.L": 0,
+    "KGF.L": 6,
+    "ULVR.L": 0
+  }
+}

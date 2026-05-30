@@ -1,0 +1,11 @@
+# Track only the Code/ and input/ folders for this repository.
+/*
+!/.gitignore
+!/Code/
+!/input/
+
+# Junk inside the tracked folders
+__pycache__/
+*.pyc
+.DS_Store
+__MACOSX/

@@ -1,0 +1,38 @@
+{
+  "part1": {
+    "selection_mode": "fixed",
+    "stocks": ["ULVR.L", "EXPN.L", "KGF.L"],
+    "stock_names": {
+      "ULVR.L": "Unilever",
+      "EXPN.L": "Experian",
+      "KGF.L": "Kingfisher"
+    },
+    "random_seed": 42,
+    "buckets": ["Large", "Mid", "Small"],
+    "universe_csv": "output/stock_universe.csv"
+  },
+  "data": {
+    "raw_csv": "../input/SMM921_trading_data_2026.csv",
+    "price_unit": "pence",
+    "price_to_gbp_divisor": 100
+  },
+  "columns": {
+    "stock": "Stock",
+    "datetime": "Date and time",
+    "last": "Last",
+    "volume": "Volume",
+    "num_trades": "Num. Trades",
+    "bid": "Bid",
+    "ask": "Ask",
+    "bid_size": "Bid size",
+    "ask_size": "Ask size"
+  },
+  "filters": {
+    "session_start": "08:15",
+    "session_end": "16:25",
+    "drop_negative_spread": true,
+    "outlier_iqr_multiple": 5.0
+  },
+  "output_dir": "output",
+  "figure_dir": "output/figures"
+}
