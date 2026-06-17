@@ -110,7 +110,10 @@ def animate_stock(stock, g, name, path):
 
     anim = animation.FuncAnimation(fig, update, frames=len(d),
                                    interval=1000 // FPS, blit=False)
-    anim.save(str(path), writer="pillow", fps=FPS)
+    # Pin the frame resolution. Animations must NOT inherit the report figures' high
+    # savefig.dpi (set globally by plot_style.apply_style); the Pillow writer holds
+    # every frame in memory, so a high dpi can exhaust a small Streamlit Cloud instance.
+    anim.save(str(path), writer="pillow", fps=FPS, dpi=100)
     plt.close(fig)
     return path
 

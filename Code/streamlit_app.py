@@ -161,27 +161,32 @@ def portfolio_outputs():
     world = r[pf_config.WORLD]
     figs = {}
 
+    def _path(result):
+        """Keep the saved figure path and close the figure to free memory at once."""
+        path, fig = result
+        plt.close(fig)
+        return str(path)
+
     perf = pf_performance.summarise(r)
-    figs["rr"] = str(pf_performance.plot_risk_return(perf)[0])
-    figs["beta"] = str(pf_performance.plot_beta(perf)[0])
+    figs["rr"] = _path(pf_performance.plot_risk_return(perf))
+    figs["beta"] = _path(pf_performance.plot_beta(perf))
 
     signal = pf_momentum.momentum_signal(r[cs])
     ports = pf_momentum.sorted_portfolios(r[cs], signal)
     panel = ports.copy()
     panel[pf_config.WORLD] = world.reindex(ports.index)
     mstats = pf_momentum.portfolio_stats(panel, world)
-    figs["mcum"] = str(pf_momentum.plot_cumulative(ports)[0])
-    figs["mono"] = str(pf_momentum.plot_monotonicity(mstats)[0])
-    figs["hml"] = str(pf_momentum.plot_hml(ports)[0])
+    figs["mcum"] = _path(pf_momentum.plot_cumulative(ports))
+    figs["mono"] = _path(pf_momentum.plot_monotonicity(mstats))
+    figs["hml"] = _path(pf_momentum.plot_hml(ports))
 
     s_ret, s_w = pf_optimize.run(r, signal, robust=False)
     rb_ret, r_w = pf_optimize.run(r, signal, robust=True)
     ostats = pf_optimize.compare_stats(s_ret, rb_ret, world)
-    figs["ocum"] = str(pf_optimize.plot_cumulative(s_ret, rb_ret, world)[0])
-    figs["olev"] = str(pf_optimize.plot_leverage(s_w, r_w)[0])
-    figs["oturn"] = str(pf_optimize.plot_turnover(s_w, r_w)[0])
+    figs["ocum"] = _path(pf_optimize.plot_cumulative(s_ret, rb_ret, world))
+    figs["olev"] = _path(pf_optimize.plot_leverage(s_w, r_w))
+    figs["oturn"] = _path(pf_optimize.plot_turnover(s_w, r_w))
 
-    plt.close("all")
     return perf, mstats, ostats, figs
 
 
