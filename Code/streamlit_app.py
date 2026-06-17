@@ -99,6 +99,20 @@ def show_table(df):
     st.markdown(styler.to_html(), unsafe_allow_html=True)
 
 
+# Figures are shown centred at a comfortable fraction of the page. Full-width is too big
+# in the wide layout and 3-up columns were too small. To resize every plot at once, change
+# the middle number of FIG_COLS: bigger middle = bigger plots (e.g. (1, 3, 1) ~= 60%).
+FIG_COLS = (1, 2, 1)   # centred, middle column ~= 50% of the page width
+
+
+def show_fig(path, caption=None):
+    """Render a figure or animation centred at a medium size (not full-width)."""
+    _, mid, _ = st.columns(FIG_COLS)
+    if caption:
+        mid.markdown(caption)
+    mid.image(path, width="stretch")
+
+
 def set_selection(stocks, names):
     """Point the Part 1 pipeline at the chosen stocks (drives every legend)."""
     config.PART1_STOCKS = list(stocks)
@@ -269,17 +283,16 @@ with tab_liq:
 
         st.subheader("Intraday liquidity patterns")
         for gif in intraday_gifs(key):
-            st.image(gif, width="stretch")
+            show_fig(gif)
 
         st.subheader("Order book (real data) by stock")
         for stock, gif in lob_real_gifs(key).items():
-            st.markdown(f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
-            st.image(gif, width="stretch")
+            show_fig(gif, caption=f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
 
     with liq_vol:
         reg, sfigs = volatility_outputs(key)
         for fig in sfigs:
-            st.image(fig, width="stretch")
+            show_fig(fig)
         st.subheader("Regression of daily liquidity on daily volatility")
         show_table(reg)
 
@@ -296,19 +309,19 @@ with tab_pf:
     with pf_perf:
         st.subheader("Performance and systematic risk by country")
         show_table(perf)
-        st.image(pfigs["rr"], width="stretch")
-        st.image(pfigs["beta"], width="stretch")
+        show_fig(pfigs["rr"])
+        show_fig(pfigs["beta"])
 
     with pf_mom:
         st.subheader("Momentum-sorted portfolios and HML")
         show_table(mstats)
-        st.image(pfigs["mcum"], width="stretch")
-        st.image(pfigs["mono"], width="stretch")
-        st.image(pfigs["hml"], width="stretch")
+        show_fig(pfigs["mcum"])
+        show_fig(pfigs["mono"])
+        show_fig(pfigs["hml"])
 
     with pf_opt:
         st.subheader("Sample versus robust covariance")
         show_table(ostats)
-        st.image(pfigs["ocum"], width="stretch")
-        st.image(pfigs["olev"], width="stretch")
-        st.image(pfigs["oturn"], width="stretch")
+        show_fig(pfigs["ocum"])
+        show_fig(pfigs["olev"])
+        show_fig(pfigs["oturn"])
