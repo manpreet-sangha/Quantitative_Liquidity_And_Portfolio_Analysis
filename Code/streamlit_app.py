@@ -275,19 +275,18 @@ with tab_liq:
     st.subheader("Selected stocks")
     show_table(sel)
 
-    liq_avg, liq_vol = st.tabs(["Average liquidity", "Liquidity vs volatility"])
+    liq_avg, liq_intra, liq_vol, liq_ob = st.tabs(
+        ["Average liquidity", "Intraday patterns",
+         "Liquidity vs volatility", "Order book (real data)"])
 
     with liq_avg:
         st.subheader("Average liquidity over the sample")
         show_table(average_table(key))
 
+    with liq_intra:
         st.subheader("Intraday liquidity patterns")
         for gif in intraday_gifs(key):
             show_fig(gif)
-
-        st.subheader("Order book (real data) by stock")
-        for stock, gif in lob_real_gifs(key).items():
-            show_fig(gif, caption=f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
 
     with liq_vol:
         reg, sfigs = volatility_outputs(key)
@@ -295,6 +294,11 @@ with tab_liq:
             show_fig(fig)
         st.subheader("Regression of daily liquidity on daily volatility")
         show_table(reg)
+
+    with liq_ob:
+        st.subheader("Order book (real data) by stock")
+        for stock, gif in lob_real_gifs(key).items():
+            show_fig(gif, caption=f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
 
 # ── Part 2: Portfolio Analysis ───────────────────────────────────────
 with tab_pf:
