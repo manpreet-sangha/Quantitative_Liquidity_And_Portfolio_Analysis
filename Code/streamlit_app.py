@@ -268,22 +268,18 @@ with tab_liq:
         show_table(average_table(key))
 
         st.subheader("Intraday liquidity patterns")
-        g = intraday_gifs(key)
-        c1, c2, c3 = st.columns(3)
-        c1.image(g[0]); c2.image(g[1]); c3.image(g[2])
+        for gif in intraday_gifs(key):
+            st.image(gif, width="stretch")
 
         st.subheader("Order book (real data) by stock")
-        lp = lob_real_gifs(key)
-        ocols = st.columns(len(lp))
-        for col, (stock, gif) in zip(ocols, lp.items()):
-            col.markdown(f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
-            col.image(gif)
+        for stock, gif in lob_real_gifs(key).items():
+            st.markdown(f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
+            st.image(gif, width="stretch")
 
     with liq_vol:
         reg, sfigs = volatility_outputs(key)
-        v1, v2 = st.columns(2)
-        v1.image(sfigs[0], width="stretch")
-        v2.image(sfigs[1], width="stretch")
+        for fig in sfigs:
+            st.image(fig, width="stretch")
         st.subheader("Regression of daily liquidity on daily volatility")
         show_table(reg)
 
@@ -300,18 +296,19 @@ with tab_pf:
     with pf_perf:
         st.subheader("Performance and systematic risk by country")
         show_table(perf)
-        p1, p2 = st.columns(2)
-        p1.image(pfigs["rr"], width="stretch")
-        p2.image(pfigs["beta"], width="stretch")
+        st.image(pfigs["rr"], width="stretch")
+        st.image(pfigs["beta"], width="stretch")
 
     with pf_mom:
         st.subheader("Momentum-sorted portfolios and HML")
         show_table(mstats)
-        m1, m2, m3 = st.columns(3)
-        m1.image(pfigs["mcum"]); m2.image(pfigs["mono"]); m3.image(pfigs["hml"])
+        st.image(pfigs["mcum"], width="stretch")
+        st.image(pfigs["mono"], width="stretch")
+        st.image(pfigs["hml"], width="stretch")
 
     with pf_opt:
         st.subheader("Sample versus robust covariance")
         show_table(ostats)
-        o1, o2, o3 = st.columns(3)
-        o1.image(pfigs["ocum"]); o2.image(pfigs["olev"]); o3.image(pfigs["oturn"])
+        st.image(pfigs["ocum"], width="stretch")
+        st.image(pfigs["olev"], width="stretch")
+        st.image(pfigs["oturn"], width="stretch")
