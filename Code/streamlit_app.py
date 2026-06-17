@@ -210,11 +210,11 @@ with st.sidebar:
     clicked_default = st.button(
         "Default (Unilever, Experian, Kingfisher)",
         disabled=ss.busy or ss.mode == "default",
-        use_container_width=True)
+        width="stretch")
     clicked_random = st.button(
         "Random (one per market-cap bucket)",
         disabled=ss.busy,
-        use_container_width=True)
+        width="stretch")
     info_text("Applies to the Liquidity Analysis tab only.")
 
 if clicked_default:
@@ -282,8 +282,8 @@ with tab_liq:
     with liq_vol:
         reg, sfigs = volatility_outputs(key)
         v1, v2 = st.columns(2)
-        v1.image(sfigs[0], use_container_width=True)
-        v2.image(sfigs[1], use_container_width=True)
+        v1.image(sfigs[0], width="stretch")
+        v2.image(sfigs[1], width="stretch")
         st.subheader("Regression of daily liquidity on daily volatility")
         show_table(reg)
 
@@ -301,8 +301,8 @@ with tab_pf:
         st.subheader("Performance and systematic risk by country")
         show_table(perf)
         p1, p2 = st.columns(2)
-        p1.image(pfigs["rr"], use_container_width=True)
-        p2.image(pfigs["beta"], use_container_width=True)
+        p1.image(pfigs["rr"], width="stretch")
+        p2.image(pfigs["beta"], width="stretch")
 
     with pf_mom:
         st.subheader("Momentum-sorted portfolios and HML")
