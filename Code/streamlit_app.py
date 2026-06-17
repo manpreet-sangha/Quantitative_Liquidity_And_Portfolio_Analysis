@@ -105,12 +105,15 @@ def show_table(df):
 FIG_COLS = (1, 2, 1)   # centred, middle column ~= 50% of the page width
 
 
-def show_fig(path, caption=None):
-    """Render a figure or animation centred at a medium size (not full-width)."""
-    _, mid, _ = st.columns(FIG_COLS)
+def show_fig(path, caption=None, align="center"):
+    """Render a figure/animation at a medium size. align='center' or 'left'."""
+    if align == "left":
+        box = st.columns([FIG_COLS[1], FIG_COLS[0] + FIG_COLS[2]])[0]
+    else:
+        box = st.columns(FIG_COLS)[1]
     if caption:
-        mid.markdown(caption)
-    mid.image(path, width="stretch")
+        box.markdown(caption)
+    box.image(path, width="stretch")
 
 
 def set_selection(stocks, names):
@@ -286,7 +289,7 @@ with tab_liq:
     with liq_intra:
         st.subheader("Intraday liquidity patterns")
         for gif in intraday_gifs(key):
-            show_fig(gif)
+            show_fig(gif, align="left")
 
     with liq_vol:
         reg, sfigs = volatility_outputs(key)
@@ -298,7 +301,8 @@ with tab_liq:
     with liq_ob:
         st.subheader("Order book (real data) by stock")
         for stock, gif in lob_real_gifs(key).items():
-            show_fig(gif, caption=f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
+            show_fig(gif, caption=f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**",
+                     align="left")
 
 # ── Part 2: Portfolio Analysis ───────────────────────────────────────
 with tab_pf:
