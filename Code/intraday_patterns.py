@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import config
+import plot_style
 
 MEASURES = [
     ("spread_bps", "Mean spread (bps)"),
@@ -28,22 +29,20 @@ def by_minute_of_day(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_intraday(agg: pd.DataFrame) -> list:
-    """Save one figure per measure (stocks overlaid). Returns the file paths."""
+    """Save one figure per measure (stocks overlaid) as PDF + PNG. Returns the paths."""
+    plot_style.apply_style()
     c = config.COLS
     paths = []
     for col, label in MEASURES:
-        fig, ax = plt.subplots(figsize=(7, 5))
+        fig, ax = plt.subplots(figsize=(7, 4))
         for stock, g in agg.groupby(c["stock"]):
-            ax.plot(g["minute_of_day"] / 60.0, g[col], linewidth=0.9,
+            ax.plot(g["minute_of_day"] / 60.0, g[col], linewidth=1.3,
                     label=config.STOCK_NAMES.get(stock, stock))
-        ax.set_xlabel("Hour of day", fontsize=16)
-        ax.set_ylabel(label, fontsize=16)
-        ax.set_title(f"Intraday pattern: {label}", fontsize=17, fontweight="bold")
-        ax.tick_params(labelsize=14)
-        ax.grid(alpha=0.25)
-        ax.legend(fontsize=15, framealpha=0.9)
-        path = config.FIGURE_DIR / f"intraday_{col}.png"
-        fig.savefig(path, dpi=200, bbox_inches="tight")
+        ax.set_xlabel("Hour of day")
+        ax.set_ylabel(label)
+        ax.set_title(f"Intraday pattern: {label}")
+        ax.margins(x=0.01)
+        ax.legend()
+        paths.append(plot_style.save_fig(fig, config.FIGURE_DIR, f"intraday_{col}"))
         plt.close(fig)
-        paths.append(path)
     return paths

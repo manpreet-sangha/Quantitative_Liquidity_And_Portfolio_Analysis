@@ -6,12 +6,14 @@ volatility using heteroskedasticity-robust standard errors, and reports the
 correlation.
 """
 
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import config
+import plot_style
 
 DEPENDENTS = [
     ("daily_spread", "Daily mean spread (bps)"),
@@ -55,22 +57,25 @@ def regress(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_scatter(daily: pd.DataFrame) -> list:
-    """Scatter of each daily liquidity measure vs daily volatility."""
+    """Scatter of each daily liquidity measure vs daily volatility (PDF + PNG)."""
+    plot_style.apply_style()
     c = config.COLS
     paths = []
     for dep, label in DEPENDENTS:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        for stock, g in daily.groupby(c["stock"]):
-            ax.scatter(g["daily_vol"], g[dep], s=30, alpha=0.8,
+        fig, ax = plt.subplots(figsize=(7, 4))
+        for i, (stock, g) in enumerate(daily.groupby(c["stock"])):
+            color = plot_style.PALETTE[i % len(plot_style.PALETTE)]
+            ax.scatter(g["daily_vol"], g[dep], s=28, alpha=0.7,
+                       edgecolors="white", linewidths=0.3, color=color,
                        label=config.STOCK_NAMES.get(stock, stock))
-        ax.set_xlabel("Daily volatility", fontsize=16)
-        ax.set_ylabel(label, fontsize=16)
-        ax.set_title(f"{label} vs daily volatility", fontsize=17, fontweight="bold")
-        ax.tick_params(labelsize=14)
-        ax.grid(alpha=0.25)
-        ax.legend(fontsize=15, markerscale=1.8, framealpha=0.9)
-        path = config.FIGURE_DIR / f"vol_{dep}.png"
-        fig.savefig(path, dpi=200, bbox_inches="tight")
+            # Fitted OLS line (same slope as the regression) to visualise beta.
+            b1, b0 = np.polyfit(g["daily_vol"], g[dep], 1)
+            xx = np.linspace(g["daily_vol"].min(), g["daily_vol"].max(), 50)
+            ax.plot(xx, b0 + b1 * xx, color=color, linewidth=2.2)
+        ax.set_xlabel("Daily volatility")
+        ax.set_ylabel(label)
+        ax.set_title(f"{label} vs daily volatility")
+        ax.legend(markerscale=1.6)
+        paths.append(plot_style.save_fig(fig, config.FIGURE_DIR, f"vol_{dep}"))
         plt.close(fig)
-        paths.append(path)
     return paths

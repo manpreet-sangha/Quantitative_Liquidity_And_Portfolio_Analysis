@@ -1,10 +1,13 @@
-"""Streamlit app for SMM921 Part 1: Liquidity Analysis.
+"""Streamlit app for SMM921: Trading and Market Microstructure.
 
-The input data is preloaded from the repo. On the front page the user chooses the
-sample with two buttons (the default ULVR/EXPN/KGF, or a random one-per-market-cap
-draw whose randomness is decided in code). Everything below - the tables, the
-animated intraday GIFs, and the real top-of-book order book - is rebuilt for the
-chosen stocks, so every legend and value stays in sync.
+Two top-level tabs:
+  * Liquidity Analysis (Part 1) - intraday liquidity of three chosen LSE stocks. Under
+    "Average liquidity" we show the average-liquidity table, then the intraday-pattern
+    animations, then the real-data order-book animations per stock. A second sub-tab
+    relates daily liquidity to daily volatility.
+  * Portfolio Analysis (Part 2) - a 34-country equity portfolio (independent of the
+    Part 1 stock choice): performance and beta, momentum-sorted portfolios and HML, and
+    the sample-vs-robust covariance mean-variance optimisation.
 
 Run:  venv/Scripts/streamlit run SMM921_Coursework/Code/streamlit_app.py
 """
@@ -29,12 +32,17 @@ import average_liquidity
 import liquidity_volatility
 import intraday_gif
 import lob_realdata
+import pf_config
+import pf_data
+import pf_performance
+import pf_momentum
+import pf_optimize
 
 # The LOB visualiser pulls in Tk on import elsewhere; keep a headless backend.
 import matplotlib.pyplot as plt
 plt.switch_backend("Agg")
 
-st.set_page_config(page_title="SMM921 Liquidity Analysis", layout="wide")
+st.set_page_config(page_title="SMM921 Trading and Market Microstructure", layout="wide")
 
 DEFAULT_STOCKS = config.CONFIG["part1"]["stocks"]
 DEFAULT_NAMES = config.CONFIG["part1"]["stock_names"]
@@ -58,19 +66,28 @@ NUM_FMT = {
     "ADV (sh/day)": "{:,.0f}",
     "Half-spread (bps)": "{:.2f}",
     "Obs": "{:,.0f}",
-    "Beta (vol)": "{:.4g}",
+    # Regression table: show complete (fixed-point) numbers, not exponential.
+    "Beta (vol)": "{:,.2f}",
     "t-stat": "{:.2f}",
-    "p-value": "{:.3g}",
+    "p-value": "{:.6f}",
     "R2": "{:.3f}",
     "Correlation": "{:.3f}",
     "N days": "{:.0f}",
+    # Part 2 tables.
+    "Ann. mean (%)": "{:.2f}",
+    "Ann. vol (%)": "{:.2f}",
+    "Sharpe": "{:.3f}",
+    "Beta": "{:.3f}",
+    "Ann. alpha (%)": "{:.2f}",
+    "Info ratio": "{:.3f}",
+    "Max drawdown (%)": "{:.2f}",
 }
 
 
 def show_table(df):
     """Render a DataFrame as a large, high-contrast HTML table (theme-independent)."""
     fmt = {c: f for c, f in NUM_FMT.items() if c in df.columns}
-    styler = df.style.hide(axis="index").format(fmt).set_table_styles([
+    styler = df.style.hide(axis="index").format(fmt, na_rep="—").set_table_styles([
         {"selector": "", "props": [("border-collapse", "collapse"), ("margin", "6px 0")]},
         {"selector": "th", "props": [("border", "1px solid #bbb"), ("font-size", "17px"),
                                      ("padding", "8px 14px"), ("background-color", "#1f4e79"),
@@ -83,7 +100,7 @@ def show_table(df):
 
 
 def set_selection(stocks, names):
-    """Point the whole pipeline at the chosen stocks (drives every legend)."""
+    """Point the Part 1 pipeline at the chosen stocks (drives every legend)."""
     config.PART1_STOCKS = list(stocks)
     config.STOCK_NAMES = dict(names)
 
@@ -133,10 +150,47 @@ def lob_real_gifs(stocks_key):
     return out
 
 
+@st.cache_data(show_spinner=False)
+def portfolio_outputs():
+    """Part 2 - build the 34-country portfolio tables and figures once (cached).
+
+    Independent of the Part 1 stock selection, so it takes no arguments.
+    """
+    r = pf_data.load_returns()
+    cs = pf_data.country_columns(r)
+    world = r[pf_config.WORLD]
+    figs = {}
+
+    perf = pf_performance.summarise(r)
+    figs["rr"] = str(pf_performance.plot_risk_return(perf)[0])
+    figs["beta"] = str(pf_performance.plot_beta(perf)[0])
+
+    signal = pf_momentum.momentum_signal(r[cs])
+    ports = pf_momentum.sorted_portfolios(r[cs], signal)
+    panel = ports.copy()
+    panel[pf_config.WORLD] = world.reindex(ports.index)
+    mstats = pf_momentum.portfolio_stats(panel, world)
+    figs["mcum"] = str(pf_momentum.plot_cumulative(ports)[0])
+    figs["mono"] = str(pf_momentum.plot_monotonicity(mstats)[0])
+    figs["hml"] = str(pf_momentum.plot_hml(ports)[0])
+
+    s_ret, s_w = pf_optimize.run(r, signal, robust=False)
+    rb_ret, r_w = pf_optimize.run(r, signal, robust=True)
+    ostats = pf_optimize.compare_stats(s_ret, rb_ret, world)
+    figs["ocum"] = str(pf_optimize.plot_cumulative(s_ret, rb_ret, world)[0])
+    figs["olev"] = str(pf_optimize.plot_leverage(s_w, r_w)[0])
+    figs["oturn"] = str(pf_optimize.plot_turnover(s_w, r_w)[0])
+
+    plt.close("all")
+    return perf, mstats, ostats, figs
+
+
 # ── Page + selection state ───────────────────────────────────────────
-st.title("SMM921 — Liquidity Analysis (Part 1)")
-info_text("Intraday liquidity of three London Stock Exchange stocks. "
-          "Pick the sample on the left.")
+st.title("SMM921 — Trading and Market Microstructure")
+info_text("Part 1 (Liquidity Analysis) studies the intraday liquidity of three London "
+          "Stock Exchange stocks; pick the sample on the left. Part 2 (Portfolio "
+          "Analysis) studies a 34-country equity portfolio using all countries, so it "
+          "does not depend on that choice.")
 
 universe = load_universe()
 cap_info = universe.set_index("Stock")[["Market cap (GBP bn)", "Size bucket"]]
@@ -147,23 +201,22 @@ ss.setdefault("rseed", 0)
 ss.setdefault("busy", True)
 
 with st.sidebar:
-    st.header("Stock selection")
+    st.header("Stock selection (Part 1)")
     clicked_default = st.button(
         "Default (Unilever, Experian, Kingfisher)",
         disabled=ss.busy or ss.mode == "default",
         use_container_width=True)
     clicked_random = st.button(
         "Random (one per market-cap bucket)",
-        disabled=ss.busy or ss.mode == "random",
+        disabled=ss.busy,
         use_container_width=True)
+    info_text("Applies to the Liquidity Analysis tab only.")
 
-# A switch enters the busy state so both buttons render disabled while processing.
 if clicked_default:
     ss.mode = "default"; ss.busy = True; st.rerun()
 if clicked_random:
     ss.mode = "random"; ss.rseed += 1; ss.busy = True; st.rerun()
 
-# Resolve the selection (random seed is chosen in code, not from the front end).
 if ss.mode == "default":
     stocks, names = list(DEFAULT_STOCKS), dict(DEFAULT_NAMES)
 else:
@@ -173,7 +226,7 @@ set_selection(stocks, names)
 key = tuple(stocks)
 
 with st.sidebar:
-    st.markdown("**Selected:**")
+    st.markdown("**Selected (Part 1):**")
     for s in stocks:
         if s in cap_info.index:
             cap = cap_info.loc[s, "Market cap (GBP bn)"]
@@ -183,13 +236,7 @@ with st.sidebar:
             extra = ""
         st.write(f"- {names.get(s, s)} ({s}{extra})")
 
-sel = (universe[universe["Stock"].isin(stocks)]
-       [["Stock", "Name", "Market cap (GBP bn)", "Size bucket"]]
-       .reset_index(drop=True))
-st.subheader("Selected stocks")
-show_table(sel)
-
-# While switching, keep both buttons disabled until everything is rebuilt.
+# Warm the Part 1 caches while a selection change is processing.
 if ss.busy:
     with st.spinner("Processing selection, please wait…"):
         average_table(key)
@@ -199,35 +246,67 @@ if ss.busy:
     ss.busy = False
     st.rerun()
 
-# ── Results (all cached, instant) ────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["Average liquidity", "Intraday patterns",
-     "Liquidity vs volatility", "Order book (real data)"])
+tab_liq, tab_pf = st.tabs(["Liquidity Analysis", "Portfolio Analysis"])
 
-with tab1:
-    st.subheader("Average liquidity over the sample")
-    show_table(average_table(key))
+# ── Part 1: Liquidity Analysis ───────────────────────────────────────
+with tab_liq:
+    sel = (universe[universe["Stock"].isin(stocks)]
+           [["Stock", "Name", "Market cap (GBP bn)", "Size bucket"]]
+           .reset_index(drop=True))
+    st.subheader("Selected stocks")
+    show_table(sel)
 
-with tab2:
-    gpaths = intraday_gifs(key)
-    st.subheader("Animated intraday patterns")
-    c1, c2, c3 = st.columns(3)
-    c1.image(gpaths[0])
-    c2.image(gpaths[1])
-    c3.image(gpaths[2])
+    liq_avg, liq_vol = st.tabs(["Average liquidity", "Liquidity vs volatility"])
 
-with tab3:
-    reg, sfigs = volatility_outputs(key)
-    s1, s2 = st.columns(2)
-    s1.image(sfigs[0], use_container_width=True)
-    s2.image(sfigs[1], use_container_width=True)
-    st.subheader("Regression of daily liquidity on daily volatility")
-    show_table(reg)
+    with liq_avg:
+        st.subheader("Average liquidity over the sample")
+        show_table(average_table(key))
 
-with tab4:
-    info_text("Real top-of-book from the input data for each stock: best bid, "
-              "best ask, their sizes, the mid and the spread, minute by minute.")
-    lpaths = lob_real_gifs(key)
-    for stock, gif in lpaths.items():
-        st.markdown(f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
-        st.image(gif)
+        st.subheader("Intraday liquidity patterns")
+        g = intraday_gifs(key)
+        c1, c2, c3 = st.columns(3)
+        c1.image(g[0]); c2.image(g[1]); c3.image(g[2])
+
+        st.subheader("Order book (real data) by stock")
+        lp = lob_real_gifs(key)
+        ocols = st.columns(len(lp))
+        for col, (stock, gif) in zip(ocols, lp.items()):
+            col.markdown(f"**{config.STOCK_NAMES.get(stock, stock)} ({stock})**")
+            col.image(gif)
+
+    with liq_vol:
+        reg, sfigs = volatility_outputs(key)
+        v1, v2 = st.columns(2)
+        v1.image(sfigs[0], use_container_width=True)
+        v2.image(sfigs[1], use_container_width=True)
+        st.subheader("Regression of daily liquidity on daily volatility")
+        show_table(reg)
+
+# ── Part 2: Portfolio Analysis ───────────────────────────────────────
+with tab_pf:
+    with st.spinner("Building the portfolio analysis (34 countries)…"):
+        perf, mstats, ostats, pfigs = portfolio_outputs()
+    info_text("A 34-country equity portfolio over 20 years of monthly data "
+              "(independent of the Part 1 stock choice).")
+
+    pf_perf, pf_mom, pf_opt = st.tabs(
+        ["Performance & risk", "Momentum portfolios", "Mean-variance optimisation"])
+
+    with pf_perf:
+        st.subheader("Performance and systematic risk by country")
+        show_table(perf)
+        p1, p2 = st.columns(2)
+        p1.image(pfigs["rr"], use_container_width=True)
+        p2.image(pfigs["beta"], use_container_width=True)
+
+    with pf_mom:
+        st.subheader("Momentum-sorted portfolios and HML")
+        show_table(mstats)
+        m1, m2, m3 = st.columns(3)
+        m1.image(pfigs["mcum"]); m2.image(pfigs["mono"]); m3.image(pfigs["hml"])
+
+    with pf_opt:
+        st.subheader("Sample versus robust covariance")
+        show_table(ostats)
+        o1, o2, o3 = st.columns(3)
+        o1.image(pfigs["ocum"]); o2.image(pfigs["olev"]); o3.image(pfigs["oturn"])

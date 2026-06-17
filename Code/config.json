@@ -33,6 +33,15 @@
     "drop_negative_spread": true,
     "outlier_iqr_multiple": 5.0
   },
+  "part2": {
+    "data_xlsx": "../input/SMM921_PF_DATA_2026.xlsx",
+    "information_coefficient": 0.02,
+    "risk_aversion": 4,
+    "window_months": 60,
+    "n_portfolios": 5,
+    "momentum_lookback": 12,
+    "momentum_skip": 1
+  },
   "output_dir": "output",
   "figure_dir": "output/figures"
 }
