@@ -42,10 +42,10 @@ import pf_optimize
 import pf_correlation
 
 # Streamlit Cloud sometimes hot-reloads this script on a git update without re-importing
-# changed modules, leaving a stale pf_correlation in sys.modules (missing newly added
-# helpers such as country_returns). Force a refresh so the current module is always used
-# without needing a manual app reboot.
-importlib.reload(pf_correlation)
+# changed modules, leaving stale module objects in sys.modules (missing newly added helpers
+# or columns). Force a refresh so the current code is always used without a manual reboot.
+for _stale in (liquidity_measures, average_liquidity, intraday_patterns, pf_correlation):
+    importlib.reload(_stale)
 
 # The LOB visualiser pulls in Tk on import elsewhere; keep a headless backend.
 import matplotlib.pyplot as plt
