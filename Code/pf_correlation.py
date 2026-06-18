@@ -71,6 +71,36 @@ def heatmap_figure(returns, end_date, window=WINDOW):
     return fig
 
 
+def _mean_offdiag(corr):
+    """Average of the off-diagonal correlations (the typical pairwise correlation)."""
+    n = len(corr)
+    return (float(corr.values.sum()) - n) / (n * (n - 1))
+
+
+def filmstrip(returns, path, window=WINDOW):
+    """Save a 2x2 grid of correlation snapshots for the report (a static 'small multiples'
+    stand-in for the animation): four evenly-spaced windows in date order, sharing one colour
+    bar, each labelled with its window-end date and average pairwise correlation."""
+    countries, R = country_returns(returns)
+    dates = window_end_dates(R, window)
+    idx = [0, len(dates) // 3, 2 * len(dates) // 3, len(dates) - 1]
+    picks = [dates[i] for i in idx]
+    means = {d: _mean_offdiag(correlation_at(R, d, window)) for d in picks}
+
+    fig, axes = plt.subplots(2, 2, figsize=(11, 9.5))
+    im = None
+    for ax, d in zip(axes.ravel(), picks):
+        im = ax.imshow(correlation_at(R, d, window).values, cmap=CMAP,
+                       vmin=0.0, vmax=1.0, aspect="auto")
+        ax.set_title(f"{d:%Y-%m}  (mean correlation {means[d]:.2f})", fontsize=12)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    fig.colorbar(im, ax=axes, fraction=0.046, pad=0.04, label="Pairwise correlation")
+    fig.savefig(str(path), dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def animate(returns, path, window=WINDOW, target_frames=TARGET_FRAMES):
     """Build and save the rolling-correlation heatmap GIF (dpi pinned for the cloud)."""
     countries, R = country_returns(returns)
