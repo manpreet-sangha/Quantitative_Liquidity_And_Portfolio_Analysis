@@ -211,6 +211,14 @@ def portfolio_outputs():
 
 
 @st.cache_data(show_spinner=False)
+def correlation_data():
+    """Part 2 - country returns plus the list of selectable 60-month window-end dates."""
+    r = pf_data.load_returns()
+    _, R = pf_correlation.country_returns(r)
+    return r, pf_correlation.window_end_dates(R)
+
+
+@st.cache_data(show_spinner=False)
 def correlation_gif():
     """Part 2 - rolling 60-month correlation heatmap of country returns (cached GIF)."""
     r = pf_data.load_returns()
@@ -323,8 +331,9 @@ with tab_pf:
     info_text("A 34-country equity portfolio over 20 years of monthly data "
               "(independent of the Part 1 stock choice).")
 
-    pf_perf, pf_mom, pf_opt = st.tabs(
-        ["Performance & risk", "Momentum portfolios", "Mean-variance optimisation"])
+    pf_perf, pf_mom, pf_opt, pf_corr = st.tabs(
+        ["Performance & risk", "Momentum portfolios", "Mean-variance optimisation",
+         "Rolling correlations"])
 
     with pf_perf:
         st.subheader("Performance and systematic risk by country")
@@ -340,16 +349,25 @@ with tab_pf:
         show_fig(pfigs["hml"])
 
     with pf_opt:
-        st.subheader("Rolling 60-month return correlations")
-        info_text("The optimiser estimates its covariance matrix from the most recent 60 "
-                  "months of returns. This animation shows that 60-month correlation matrix "
-                  "sliding through time. The grid reddens in 2008 and 2020 as cross-country "
-                  "correlations spike and diversification evaporates, then cools afterwards.")
-        with st.spinner("Building the rolling-correlation animation…"):
-            show_fig(correlation_gif())
-
         st.subheader("Sample versus robust covariance")
         show_table(ostats)
         show_fig(pfigs["ocum"])
         show_fig(pfigs["olev"])
         show_fig(pfigs["oturn"])
+
+    with pf_corr:
+        st.subheader("Rolling 60-month return correlations")
+        info_text("The optimiser estimates its covariance matrix from the most recent 60 "
+                  "months of returns. Drag the slider to move that 60-month window through "
+                  "time. The grid reddens in 2008 and 2020 as cross-country correlations "
+                  "spike and diversification evaporates, then cools afterwards.")
+        r_corr, dates = correlation_data()
+        labels = [d.strftime("%Y-%m") for d in dates]
+        sel = st.select_slider("Window ending (month)", options=labels, value=labels[-1])
+        end_date = dates[labels.index(sel)]
+        fig = pf_correlation.heatmap_figure(r_corr, end_date)
+        st.columns([2, 2])[0].pyplot(fig)
+        plt.close(fig)
+        if st.checkbox("Play the full sweep as an animation (builds a GIF)"):
+            with st.spinner("Building the animation…"):
+                show_fig(correlation_gif())
