@@ -76,5 +76,6 @@ def plot_beta(summary: pd.DataFrame):
     ax.axhline(1.0, color="0.3", linewidth=0.9, linestyle="--", label="Beta = 1")
     ax.set_ylabel("Beta to world market")
     ax.tick_params(axis="x", labelrotation=90, labelsize=11)
+    plt.setp(ax.get_xticklabels(), fontweight="bold")
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_beta"), fig
