@@ -32,6 +32,7 @@ import cleaning
 import average_liquidity
 import liquidity_volatility
 import intraday_gif
+import intraday_patterns
 import lob_realdata
 import pf_config
 import pf_data
@@ -69,6 +70,9 @@ NUM_FMT = {
     "Mean spread (bps)": "{:.2f}",
     "Median spread (bps)": "{:.2f}",
     "Mean depth (GBP)": "{:,.0f}",
+    "Turnover (GBP/min)": "{:,.0f}",
+    "Value ADV (GBP/day)": "{:,.0f}",
+    "Amihud illiq (x1e6)": "{:.3f}",
     "Mean volume (sh/min)": "{:,.0f}",
     "Mean trades/min": "{:.1f}",
     "ADV (sh/day)": "{:,.0f}",
@@ -163,6 +167,16 @@ def intraday_gifs(stocks_key):
     intraday_gif.main()
     return [str(intraday_gif.OUT / f"intraday_{m}.gif")
             for m in ("spread", "depth", "volume")]
+
+
+@st.cache_data(show_spinner=False)
+def intraday_extra_figs(stocks_key):
+    """Static intraday volatility and volume-allocation profiles (Part 1 augmentation)."""
+    agg = intraday_patterns.by_minute_of_day(cleaned_panel(stocks_key))
+    paths = [str(p) for p in intraday_patterns.plot_intraday(agg)]
+    volalloc = str(intraday_patterns.plot_volume_allocation(agg))
+    volatility = next(p for p in paths if "abs_ret" in p)
+    return [volatility, volalloc]
 
 
 @st.cache_data(show_spinner=False)
@@ -322,6 +336,9 @@ with tab_liq:
         st.subheader("Intraday liquidity patterns")
         for gif in intraday_gifs(key):
             show_fig(gif, align="left")
+        st.subheader("Intraday volatility and volume allocation")
+        for fig in intraday_extra_figs(key):
+            show_fig(fig, align="left")
 
     with liq_vol:
         reg, sfigs = volatility_outputs(key)

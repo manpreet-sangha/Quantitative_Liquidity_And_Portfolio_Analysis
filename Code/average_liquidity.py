@@ -1,11 +1,24 @@
 """Part 1: summarise average liquidity per stock.
 
-Produces a per-stock table of mean and median spread, mean depth, mean volume and
-trade counts for the cross-sectional comparison of the three stocks.
+Produces a per-stock table for the cross-sectional comparison of the three stocks.
+It covers the three dimensions of liquidity: cost (bid-ask spread), quantity (depth
+and GBP turnover) and price impact (the Amihud (2002) illiquidity ratio), plus trade
+counts.
 """
 
 import pandas as pd
 import config
+
+
+def _amihud(g: pd.DataFrame) -> float:
+    """Amihud (2002) illiquidity for one stock: median across days of the daily mean of
+    |midquote return| / GBP volume, over traded minutes only. Scaled by 1e6 for reading."""
+    c = config.COLS
+    t = g[(g[c["volume"]] > 0) & (g["gbp_volume"] > 0) & g["abs_ret"].notna()]
+    if t.empty:
+        return float("nan")
+    daily = (t["abs_ret"] / t["gbp_volume"]).groupby(t["date"]).mean()
+    return daily.median() * 1e6
 
 
 def summarise(df: pd.DataFrame) -> pd.DataFrame:
@@ -21,6 +34,9 @@ def summarise(df: pd.DataFrame) -> pd.DataFrame:
             "Mean spread (bps)": g["spread_bps"].mean(),
             "Median spread (bps)": g["spread_bps"].median(),
             "Mean depth (GBP)": g["depth_gbp"].mean(),
+            "Turnover (GBP/min)": g["gbp_volume"].mean(),
+            "Value ADV (GBP/day)": g["gbp_volume"].sum() / n_days[stock],
+            "Amihud illiq (x1e6)": _amihud(g),
             "Mean volume (sh/min)": g[c["volume"]].mean(),
             "Mean trades/min": g[c["num_trades"]].mean(),
             "ADV (sh/day)": g[c["volume"]].sum() / n_days[stock],

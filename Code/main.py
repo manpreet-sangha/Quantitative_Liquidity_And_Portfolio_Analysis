@@ -40,6 +40,7 @@ def main():
     agg = intraday_patterns.by_minute_of_day(df)
     agg.to_csv(config.OUTPUT_DIR / "intraday_patterns.csv", index=False)
     intraday_patterns.plot_intraday(agg)
+    intraday_patterns.plot_volume_allocation(agg)
 
     # O6 - liquidity vs volatility
     daily = liquidity_volatility.daily_panel(df)

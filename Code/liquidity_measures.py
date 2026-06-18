@@ -25,4 +25,10 @@ def add_measures(df: pd.DataFrame) -> pd.DataFrame:
 
     # Midquote returns within each stock-day (avoids overnight jumps).
     out["ret"] = out.groupby([c["stock"], "date"])["mid"].pct_change()
+    out["abs_ret"] = out["ret"].abs()
+
+    # GBP value traded per minute (shares x last price in pence -> GBP). No-trade
+    # minutes have no Last, so the value is 0. Used for GBP turnover (cross-stock
+    # comparable activity) and the Amihud (2002) illiquidity ratio.
+    out["gbp_volume"] = (out[c["volume"]] * out[c["last"]] / config.PRICE_DIVISOR).fillna(0.0)
     return out
