@@ -37,6 +37,7 @@ import pf_data
 import pf_performance
 import pf_momentum
 import pf_optimize
+import pf_correlation
 
 # The LOB visualiser pulls in Tk on import elsewhere; keep a headless backend.
 import matplotlib.pyplot as plt
@@ -105,8 +106,10 @@ def show_table(df):
 FIG_COLS = (1, 2, 1)   # centred, middle column ~= 50% of the page width
 
 
-def show_fig(path, caption=None, align="center"):
-    """Render a figure/animation at a medium size. align='center' or 'left'."""
+def show_fig(path, caption=None, align="left"):
+    """Render a figure/animation at a medium size, left-justified by default.
+
+    align='left' (default) or 'center'."""
     if align == "left":
         box = st.columns([FIG_COLS[1], FIG_COLS[0] + FIG_COLS[2]])[0]
     else:
@@ -205,6 +208,15 @@ def portfolio_outputs():
     figs["oturn"] = _path(pf_optimize.plot_turnover(s_w, r_w))
 
     return perf, mstats, ostats, figs
+
+
+@st.cache_data(show_spinner=False)
+def correlation_gif():
+    """Part 2 - rolling 60-month correlation heatmap of country returns (cached GIF)."""
+    r = pf_data.load_returns()
+    out = pf_correlation.OUT / "corr_rolling.gif"
+    pf_correlation.animate(r, out)
+    return str(out)
 
 
 # ── Page + selection state ───────────────────────────────────────────
@@ -328,6 +340,14 @@ with tab_pf:
         show_fig(pfigs["hml"])
 
     with pf_opt:
+        st.subheader("Rolling 60-month return correlations")
+        info_text("The optimiser estimates its covariance matrix from the most recent 60 "
+                  "months of returns. This animation shows that 60-month correlation matrix "
+                  "sliding through time. The grid reddens in 2008 and 2020 as cross-country "
+                  "correlations spike and diversification evaporates, then cools afterwards.")
+        with st.spinner("Building the rolling-correlation animation…"):
+            show_fig(correlation_gif())
+
         st.subheader("Sample versus robust covariance")
         show_table(ostats)
         show_fig(pfigs["ocum"])
