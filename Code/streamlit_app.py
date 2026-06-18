@@ -226,8 +226,13 @@ def correlation_data():
 
 
 @st.cache_data(show_spinner=False)
-def correlation_gif():
-    """Part 2 - rolling 60-month correlation heatmap of country returns (cached GIF)."""
+def correlation_gif(version):
+    """Part 2 - rolling 60-month correlation heatmap GIF.
+
+    `version` keys the cache on the plot's look (colormap, size, frames) so changing the
+    style regenerates the GIF instead of serving a stale cached file. Streamlit keeps the
+    cache across hot-reloads, so a no-argument version would never refresh after an edit.
+    """
     r = pf_data.load_returns()
     out = pf_correlation.OUT / "corr_rolling.gif"
     pf_correlation.animate(r, out)
@@ -380,5 +385,35 @@ with tab_pf:
             st.columns([5, 1])[0].pyplot(fig)
         plt.close(fig)
         if st.checkbox("Play the full sweep as an animation (builds a GIF)"):
+            gif_version = (f"{pf_correlation.CMAP}-{pf_correlation.FIGSIZE}-"
+                           f"{pf_correlation.TARGET_FRAMES}-{pf_correlation.FPS}")
             with st.spinner("Building the animation…"):
-                st.columns([5, 1])[0].image(correlation_gif(), width="stretch")
+                st.columns([5, 1])[0].image(correlation_gif(gif_version), width="stretch")
+
+        st.subheader("What a portfolio manager and trader take from this")
+        st.markdown(
+            "- **Diversification is regime-dependent.** Correlations jump toward 1 in 2008 and "
+            "2020, so a calm-period diversified book becomes one global-equity bet in a crash. "
+            "Budget risk against crisis correlations and cut gross exposure as the grid reddens.\n"
+            "- **Regional clusters are redundant.** The developed-Europe bloc sits near 0.9, so "
+            "holding several of those markets is really one position. Durable diversification "
+            "comes from the persistently loose names (Brazil, India, Indonesia, Korea), though "
+            "they too converge in a global crisis.\n"
+            "- **Size and leverage inversely to the correlation regime.** The same positions are "
+            "riskier when the grid is red, so scale gross exposure down as average correlation "
+            "rises (correlation-adjusted volatility targeting).\n"
+            "- **Hedge from outside equities.** Because intra-equity correlations converge in "
+            "stress, crisis protection must come from index puts, volatility, Treasuries, gold or "
+            "trend following rather than from another country.\n"
+            "- **The matrix is unstable, so the optimiser needs a robust covariance.** The "
+            "window-to-window movement seen here is the estimation noise that makes a "
+            "sample-covariance optimiser over-fit; it is why the robust constant-correlation "
+            "version in the Mean-variance optimisation tab is far better behaved."
+        )
+        st.caption(
+            "Caveats: these are reasonable inferences from one 2006–2026 sample of monthly "
+            "country-index returns on 60-month windows. The levels are sample-specific and the "
+            "long window smooths and lags regime shifts (for trading signals you would use a "
+            "shorter window). They are sound as risk-management and construction principles, not "
+            "a backtested trading system."
+        )
