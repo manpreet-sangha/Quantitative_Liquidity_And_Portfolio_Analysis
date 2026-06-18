@@ -40,7 +40,6 @@ def plot_intraday(agg: pd.DataFrame) -> list:
                     label=config.STOCK_NAMES.get(stock, stock))
         ax.set_xlabel("Hour of day")
         ax.set_ylabel(label)
-        ax.set_title(f"Intraday pattern: {label}")
         ax.margins(x=0.01)
         ax.legend()
         paths.append(plot_style.save_fig(fig, config.FIGURE_DIR, f"intraday_{col}"))

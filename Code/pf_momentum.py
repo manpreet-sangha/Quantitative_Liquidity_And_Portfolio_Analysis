@@ -93,9 +93,8 @@ def plot_cumulative(portfolios: pd.DataFrame):
         cum = (1.0 + portfolios[col]).cumprod()
         ax.plot(portfolios.index, cum, label=col,
                 color=plot_style.PALETTE[i % len(plot_style.PALETTE)])
-    ax.set_ylabel("Growth of \\pounds1")
+    ax.set_ylabel("Growth of £1")
     ax.set_xlabel("Date")
-    ax.set_title("Cumulative return of momentum-sorted portfolios")
     ax.legend(ncol=5, fontsize=9)
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_mom_cumulative"), fig
 
@@ -109,7 +108,6 @@ def plot_monotonicity(stats: pd.DataFrame):
            edgecolor="white")
     ax.axhline(0, color="0.4", linewidth=0.8)
     ax.set_ylabel("Annualised mean return (%)")
-    ax.set_title("Mean return across momentum groups (losers to winners)")
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_mom_monotonicity"), fig
 
 
@@ -120,8 +118,7 @@ def plot_hml(portfolios: pd.DataFrame):
     cum = (1.0 + portfolios["HML"]).cumprod()
     ax.plot(portfolios.index, cum, color=plot_style.PALETTE[1], label="HML (P5 - P1)")
     ax.axhline(1.0, color="0.4", linewidth=0.8)
-    ax.set_ylabel("Growth of \\pounds1")
+    ax.set_ylabel("Growth of £1")
     ax.set_xlabel("Date")
-    ax.set_title("Cumulative return of the HML momentum spread")
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_mom_hml"), fig

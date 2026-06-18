@@ -115,9 +115,8 @@ def plot_cumulative(sample_ret, robust_ret, world):
             color=plot_style.PALETTE[1])
     ax.plot(w.index, (1 + w).cumprod(), label="World (equal-weight)",
             color="0.5", linewidth=1.2, linestyle="--")
-    ax.set_ylabel("Growth of \\pounds1")
+    ax.set_ylabel("Growth of £1")
     ax.set_xlabel("Date")
-    ax.set_title("Optimised portfolios vs the world market")
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_opt_cumulative"), fig
 
@@ -133,7 +132,6 @@ def plot_leverage(sample_w, robust_w):
     ax.axhline(1.0, color="0.3", linewidth=0.9, linestyle="--", label="No leverage")
     ax.set_ylabel("Sum of absolute weights")
     ax.set_xlabel("Date")
-    ax.set_title("Gross leverage of the optimised portfolios")
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_opt_leverage"), fig
 
@@ -147,8 +145,7 @@ def plot_turnover(sample_w, robust_w):
             label=f"Sample cov. (mean {ts.mean():.1f})")
     ax.plot(tr.index, tr, color=plot_style.PALETTE[1],
             label=f"Robust cov. (mean {tr.mean():.1f})")
-    ax.set_ylabel("Turnover (sum of absolute weight changes)")
+    ax.set_ylabel("Turnover")
     ax.set_xlabel("Date")
-    ax.set_title("Monthly turnover of the optimised portfolios")
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_opt_turnover"), fig

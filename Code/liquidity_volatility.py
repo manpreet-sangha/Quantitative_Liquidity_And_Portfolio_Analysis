@@ -74,7 +74,6 @@ def plot_scatter(daily: pd.DataFrame) -> list:
             ax.plot(xx, b0 + b1 * xx, color=color, linewidth=2.2)
         ax.set_xlabel("Daily volatility")
         ax.set_ylabel(label)
-        ax.set_title(f"{label} vs daily volatility")
         ax.legend(markerscale=1.6)
         paths.append(plot_style.save_fig(fig, config.FIGURE_DIR, f"vol_{dep}"))
         plt.close(fig)

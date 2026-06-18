@@ -64,7 +64,6 @@ def plot_risk_return(summary: pd.DataFrame):
     ax.axhline(0, color="0.4", linewidth=0.8)
     ax.set_xlabel("Annualised volatility (%)")
     ax.set_ylabel("Annualised mean return (%)")
-    ax.set_title("Risk and return by country")
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_risk_return"), fig
 
 
@@ -76,7 +75,6 @@ def plot_beta(summary: pd.DataFrame):
     ax.bar(s["Country"], s["Beta"], color=plot_style.PALETTE[2], edgecolor="white")
     ax.axhline(1.0, color="0.3", linewidth=0.9, linestyle="--", label="Beta = 1")
     ax.set_ylabel("Beta to world market")
-    ax.set_title("Sensitivity to the world market by country")
-    ax.tick_params(axis="x", labelrotation=90, labelsize=9)
+    ax.tick_params(axis="x", labelrotation=90, labelsize=11)
     ax.legend()
     return plot_style.save_fig(fig, pf_config.FIGURE_DIR, "pf_beta"), fig
