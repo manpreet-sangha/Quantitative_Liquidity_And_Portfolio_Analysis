@@ -13,6 +13,7 @@ Run:  venv/Scripts/streamlit run SMM921_Coursework/Code/streamlit_app.py
 """
 
 import sys
+import importlib
 from pathlib import Path
 
 import matplotlib
@@ -38,6 +39,12 @@ import pf_performance
 import pf_momentum
 import pf_optimize
 import pf_correlation
+
+# Streamlit Cloud sometimes hot-reloads this script on a git update without re-importing
+# changed modules, leaving a stale pf_correlation in sys.modules (missing newly added
+# helpers such as country_returns). Force a refresh so the current module is always used
+# without needing a manual app reboot.
+importlib.reload(pf_correlation)
 
 # The LOB visualiser pulls in Tk on import elsewhere; keep a headless backend.
 import matplotlib.pyplot as plt
