@@ -2,13 +2,15 @@
 
 At each month we take the most recent ``window`` monthly returns (the same 60-month
 window the optimiser uses to build its covariance matrix) and compute the pairwise
-correlation matrix across the 34 countries. The Streamlit app drives this with a
-month slider so the structure can be inspected as it tightens in the 2008 and 2020
-crises (the grid reddens, diversification evaporates) and relaxes afterwards. A GIF
-of the full sweep is also available on demand.
+correlation matrix across the 34 countries. The Streamlit app drives this with a month
+slider so the structure can be inspected as it tightens in the 2008 and 2020 crises
+(cells shift toward red as correlations rise and diversification evaporates) and relaxes
+afterwards. A GIF of the full sweep is also available on demand.
 
 Country order is fixed (alphabetical) across every view so each cell always refers to
-the same pair and its colour is comparable through time.
+the same pair and its colour is comparable through time. The colour scale is the
+high-contrast ``turbo`` map (blue = low correlation, green = mid, red = high) so small
+differences across the 0.4-0.9 band where the action is are easy to read.
 """
 
 import matplotlib
@@ -21,9 +23,11 @@ import pf_data
 
 OUT = pf_config.OUTPUT_DIR
 WINDOW = pf_config.WINDOW       # 60 months, matches the optimiser's covariance window
-TARGET_FRAMES = 90              # cap on the number of GIF frames
+TARGET_FRAMES = 70              # cap on the number of GIF frames
 FPS = 6
-CMAP = "YlOrRd"
+CMAP = "turbo"                  # high contrast: blue (low) -> green (mid) -> red (high)
+FIGSIZE = (11, 9)               # large so the 34x34 grid and country labels are readable
+TICK_FONTSIZE = 7
 
 
 def country_returns(returns):
@@ -49,17 +53,17 @@ def _draw(ax, corr, countries, date, window):
     im = ax.imshow(corr.values, cmap=CMAP, vmin=0.0, vmax=1.0, aspect="auto")
     ax.set_xticks(range(n))
     ax.set_yticks(range(n))
-    ax.set_xticklabels(countries, rotation=90, fontsize=5)
-    ax.set_yticklabels(countries, fontsize=5)
+    ax.set_xticklabels(countries, rotation=90, fontsize=TICK_FONTSIZE)
+    ax.set_yticklabels(countries, fontsize=TICK_FONTSIZE)
     ax.set_title(f"{window}-month rolling correlation of country returns "
-                 f"(window ending {date:%Y-%m})")
+                 f"(window ending {date:%Y-%m})", fontsize=13)
     return im
 
 
 def heatmap_figure(returns, end_date, window=WINDOW):
     """A single static heatmap figure for the window ending end_date (for st.pyplot)."""
     countries, R = country_returns(returns)
-    fig, ax = plt.subplots(figsize=(7.5, 6.5))
+    fig, ax = plt.subplots(figsize=FIGSIZE)
     im = _draw(ax, correlation_at(R, end_date, window), countries, end_date, window)
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("Pairwise correlation")
@@ -76,7 +80,7 @@ def animate(returns, path, window=WINDOW, target_frames=TARGET_FRAMES):
     if dates[-1] != R.index[-1]:
         dates.append(R.index[-1])
 
-    fig, ax = plt.subplots(figsize=(7.5, 6.5))
+    fig, ax = plt.subplots(figsize=FIGSIZE)
     im = _draw(ax, correlation_at(R, dates[0], window), countries, dates[0], window)
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("Pairwise correlation")
@@ -86,7 +90,7 @@ def animate(returns, path, window=WINDOW, target_frames=TARGET_FRAMES):
         d = dates[k]
         im.set_data(correlation_at(R, d, window).values)
         ax.set_title(f"{window}-month rolling correlation of country returns "
-                     f"(window ending {d:%Y-%m})")
+                     f"(window ending {d:%Y-%m})", fontsize=13)
         return [im]
 
     anim = animation.FuncAnimation(fig, update, frames=len(dates),

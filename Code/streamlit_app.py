@@ -366,15 +366,19 @@ with tab_pf:
         st.subheader("Rolling 60-month return correlations")
         info_text("The optimiser estimates its covariance matrix from the most recent 60 "
                   "months of returns. Drag the slider to move that 60-month window through "
-                  "time. The grid reddens in 2008 and 2020 as cross-country correlations "
-                  "spike and diversification evaporates, then cools afterwards.")
+                  "time. Cells shift from blue toward red as cross-country correlations rise "
+                  "and diversification evaporates, most dramatically in the 2008 and 2020 "
+                  "crises, then cool again afterwards.")
         r_corr, dates = correlation_data()
         labels = [d.strftime("%Y-%m") for d in dates]
         sel = st.select_slider("Window ending (month)", options=labels, value=labels[-1])
         end_date = dates[labels.index(sel)]
         fig = pf_correlation.heatmap_figure(r_corr, end_date)
-        st.columns([2, 2])[0].pyplot(fig)
+        # Pin the save dpi: other Part 2 plots call plot_style.apply_style(), which sets a
+        # high global savefig.dpi that would otherwise bloat this figure.
+        with matplotlib.rc_context({"savefig.dpi": 110}):
+            st.columns([5, 1])[0].pyplot(fig)
         plt.close(fig)
         if st.checkbox("Play the full sweep as an animation (builds a GIF)"):
             with st.spinner("Building the animation…"):
-                show_fig(correlation_gif())
+                st.columns([5, 1])[0].image(correlation_gif(), width="stretch")
