@@ -15,7 +15,7 @@ MEASURES = [
     ("spread_bps", "Mean spread (bps)"),
     ("depth_gbp", "Mean depth (GBP)"),
     ("volume", "Mean volume (shares/min)"),
-    ("abs_ret", "Mean |midquote return| (volatility)"),
+    ("abs_ret", "Mean |midquote return|"),
 ]
 
 
@@ -40,8 +40,8 @@ def plot_intraday(agg: pd.DataFrame) -> list:
         for stock, g in agg.groupby(c["stock"]):
             ax.plot(g["minute_of_day"] / 60.0, g[col], linewidth=1.3,
                     label=config.STOCK_NAMES.get(stock, stock))
-        ax.set_xlabel("Hour of day")
-        ax.set_ylabel(label)
+        ax.set_xlabel("Hour of day", fontweight="bold")
+        ax.set_ylabel(label, fontweight="bold")
         ax.margins(x=0.01)
         ax.legend()
         paths.append(plot_style.save_fig(fig, config.FIGURE_DIR, f"intraday_{col}"))
@@ -63,8 +63,8 @@ def plot_volume_allocation(agg: pd.DataFrame, bin_minutes: int = 15):
         share = vol_by_bucket / vol_by_bucket.sum() * 100.0
         ax.plot(share.index / 60.0, share.values, linewidth=1.5, marker="o", markersize=3,
                 label=config.STOCK_NAMES.get(stock, stock))
-    ax.set_xlabel("Hour of day")
-    ax.set_ylabel("Share of daily volume (%)")
+    ax.set_xlabel("Hour of day", fontweight="bold")
+    ax.set_ylabel("Share of daily volume (%)", fontweight="bold")
     ax.margins(x=0.01)
     ax.legend()
     path = plot_style.save_fig(fig, config.FIGURE_DIR, "intraday_volalloc")

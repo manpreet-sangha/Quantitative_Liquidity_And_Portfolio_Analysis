@@ -79,7 +79,7 @@ NUM_FMT = {
     "Half-spread (bps)": "{:.2f}",
     "Obs": "{:,.0f}",
     # Regression table: show complete (fixed-point) numbers, not exponential.
-    "Beta (vol)": "{:,.2f}",
+    "Beta (per bp)": "{:,.2f}",
     "t-stat": "{:.2f}",
     "p-value": "{:.6f}",
     "R2": "{:.3f}",
@@ -345,6 +345,10 @@ with tab_liq:
         for fig in sfigs:
             show_fig(fig)
         st.subheader("Regression of daily liquidity on daily volatility")
+        # Report the slope per 1 bp of daily volatility (raw slope x 1e-4, since 1 bp of the
+        # volatility measure is 0.0001) so the table matches the report's Table 2.
+        reg = reg.rename(columns={"Beta (vol)": "Beta (per bp)"})
+        reg["Beta (per bp)"] = reg["Beta (per bp)"] * 1e-4
         show_table(reg)
 
     with liq_ob:
