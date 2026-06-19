@@ -58,9 +58,12 @@ def plot_risk_return(summary: pd.DataFrame):
     ax.scatter(summary["Ann. vol (%)"], summary["Ann. mean (%)"],
                s=46, alpha=0.8, color=plot_style.PALETTE[0], edgecolors="white",
                linewidths=0.5)
+    # Bold the countries discussed in the report's Figure 8 write-up.
+    highlight = {"USA", "BRAZIL", "PORTUGAL", "IRELAND", "AUSTRIA"}
     for _, row in summary.iterrows():
         ax.annotate(row["Country"], (row["Ann. vol (%)"], row["Ann. mean (%)"]),
-                    fontsize=9, xytext=(3, 2), textcoords="offset points")
+                    fontsize=9, xytext=(3, 2), textcoords="offset points",
+                    fontweight="bold" if row["Country"] in highlight else "normal")
     ax.axhline(0, color="0.4", linewidth=0.8)
     ax.set_xlabel("Annualised volatility (%)")
     ax.set_ylabel("Annualised mean return (%)")

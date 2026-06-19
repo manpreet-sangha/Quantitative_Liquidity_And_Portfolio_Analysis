@@ -18,6 +18,8 @@ import pf_data
 import pf_performance
 import pf_momentum
 import pf_optimize
+import pf_significance
+import pf_netcost
 
 OUT = pf_config.OUTPUT_DIR
 
@@ -59,6 +61,16 @@ def main():
     _, fig = pf_momentum.plot_monotonicity(pstats); plt.close(fig)
     _, fig = pf_momentum.plot_hml(ports); plt.close(fig)
 
+    # --- F (extra): is the HML spread really non-zero, and how fat are the tails? ---
+    hml = ports["HML"]
+    mean_t, mean_p = pf_significance.mean_tstat(hml)
+    a_m, a_t, a_p = pf_significance.alpha_tstat(hml, returns[pf_config.WORLD])
+    moments = pf_significance.higher_moments(mom_panel)
+    _save(moments.reset_index().rename(columns={"index": "Portfolio"}), "momentum_moments.csv")
+    print(f"HML mean: t={mean_t:.2f} (p={mean_p:.3f}); "
+          f"HML alpha {a_m * 12 * 100:.2f}%/yr: t={a_t:.2f} (p={a_p:.3f})")
+    print(moments.round(2).to_string(), "\n")
+
     # --- G + H: mean-variance optimisation (sample vs robust covariance) ---
     s_ret, s_w = pf_optimize.run(returns, signal, robust=False)
     r_ret, r_w = pf_optimize.run(returns, signal, robust=True)
@@ -76,6 +88,13 @@ def main():
     _, fig = pf_optimize.plot_cumulative(s_ret, r_ret, returns[pf_config.WORLD]); plt.close(fig)
     _, fig = pf_optimize.plot_leverage(s_w, r_w); plt.close(fig)
     _, fig = pf_optimize.plot_turnover(s_w, r_w); plt.close(fig)
+
+    # --- G + H (extra): net-of-cost Sharpe at a few assumed trading-cost levels ---
+    netcost = pf_netcost.cost_table({"Sample": s_ret, "Robust": r_ret},
+                                    {"Sample": s_w, "Robust": r_w}, [5, 10])
+    _save(netcost, "opt_netcost.csv")
+    print("Net-of-cost annualised Sharpe:")
+    print(netcost.round(3).to_string(index=False))
 
     print(f"\nAll Part 2 outputs written to {OUT}")
 
